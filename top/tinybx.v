@@ -79,7 +79,7 @@ module top(
 	);
 
 	iceZ0mb1e core (
-		.clk		(clk_pll),
+		.clk		(clk),
 		.rst_n          (clk_locked),
 		.uart_txd	(uart_txd),
 		.uart_rxd	(uart_rxd),
