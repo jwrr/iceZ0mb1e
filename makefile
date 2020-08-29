@@ -156,7 +156,7 @@ fpga: rtl/pll.v $(SRC) $(FPGA_PINMAP) firmware
 	$(ICEPACK) $(FPGA_TXT_OUT) $(FPGA_BIN_OUT)
 	
 rtl/pll.v:
-	icepll -i 16 -o 18 -m -f rtl/pll.v
+	icepll -i 16 -o 24 -m -f rtl/pll.v
 
 time:
 	$(ICETIME) -mt -p $(FPGA_PINMAP) $(ICETIMEFLAGS) $(FPGA_TXT_OUT)
