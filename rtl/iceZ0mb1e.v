@@ -73,11 +73,13 @@ module iceZ0mb1e  #(
         wire [7:0] data_miso_rom;
         wire [7:0] data_miso_ram;
         wire [7:0] data_miso_port;
+        wire [7:0] data_miso_timer;
         wire [7:0] data_miso_uart;
         wire [7:0] data_miso_i2c;
         wire [7:0] data_miso_spi;
         assign data_miso = data_miso_rom  | data_miso_ram | data_miso_port |
-                           data_miso_uart | data_miso_i2c | data_miso_spi;
+                           data_miso_uart | data_miso_i2c | data_miso_spi |
+                           data_miso_timer;
 
 
 	//Reset Controller:
@@ -90,17 +92,20 @@ module iceZ0mb1e  #(
 		end
 	end
 
-	wire uart_cs_n, port_cs_n, i2c_cs_n, spi_cs_n;
+	wire uart_cs_n, port_cs_n, i2c_cs_n, spi_cs_n, timer_cs_n;
 	wire rom_cs_n, ram_cs_n;
 
 	//I/O Address Decoder:
-	assign uart_cs_n = ~(!iorq_n & (addr[7:3] == 5'b00011)); // UART base 0x18
-	assign port_cs_n = ~(!iorq_n & (addr[7:3] == 5'b01000)); // PORT base 0x40
-	assign i2c_cs_n = ~(!iorq_n & (addr[7:3] == 5'b01010)); // i2c base 0x50
-	assign spi_cs_n = ~(!iorq_n & (addr[7:3] == 5'b01100)); // spi base 0x60
+	assign uart_cs_n  = ~(!iorq_n & (addr[7:3] == 5'b00011)); // UART base 0x18
+	assign port_cs_n  = ~(!iorq_n & (addr[7:3] == 5'b01000)); // PORT base 0x40
+	assign i2c_cs_n   = ~(!iorq_n & (addr[7:3] == 5'b01010)); // i2c base 0x50
+	assign spi_cs_n   = ~(!iorq_n & (addr[7:3] == 5'b01100)); // spi base 0x60 01100 000 -> 0110 0000
+	assign timer_cs_n   = ~(!iorq_n & (addr[7:3] == 5'b01110)); // spi base 0x70 01110 000 -> 0111 0000
 	//Memory Address Decoder:
 	assign rom_cs_n = ~(!mreq_n & (addr  < ROM_SIZE));
 	assign ram_cs_n = ~(!mreq_n & (addr >= RAM_LOC) & (addr < (RAM_LOC+RAM_SIZE)));
+
+        wire ram_cs_n_bad = ~(!mreq_n & (addr >= (RAM_LOC+RAM_SIZE)));
 
 	//SoC Info
 	initial begin
@@ -139,7 +144,7 @@ module iceZ0mb1e  #(
     	.clk		(clk),
     	.reset_n	(reset_n),
     	.data_out	(data_miso_rom),
-    	.data_in	('h0),
+    	.data_in	(8'h0),
     	.cs_n		(rom_cs_n),
     	.rd_n		(rd_n),
     	.wr_n		(wr_n),
@@ -240,5 +245,18 @@ endgenerate
 		.miso		(spi_miso),
 		.cs			(spi_cs)
 	);
+
+	simpletimer timer0
+	(
+		.clk		(clk),
+		.reset_n	(reset_n),
+		.data_out	(data_miso_timer),
+		.data_in	(data_mosi),
+		.cs_n		(timer_cs_n),
+		.rd_n		(rd_n),
+		.wr_n		(wr_n),
+		.addr		(addr[3:0])
+	);
+
 
 endmodule
