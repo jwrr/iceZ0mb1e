@@ -55,24 +55,29 @@ ifeq ($(TARGET),1k)
 	SRC += ./top/hx1k.v
 	ARACHNEFLAGS = -d 1k
 	FPGA_PINMAP = ./pinmap/hx1k.pcf
+#	NEXTPNRFLAGS = --hx1k --package tq144 --pcf $(FPGA_PINMAP) --freq 12 --opt-timing --json $(FPGA_JSON) --asc $(FPGA_ASC)
 else ifeq ($(TARGET),icezum)
 	SRC += ./top/icezum.v
 	ARACHNEFLAGS = -d 1k
 	FPGA_PINMAP = ./pinmap/icezum.pcf
+#	NEXTPNRFLAGS = --hx1k --package tq144 --pcf $(FPGA_PINMAP) --freq 12 --opt-timing --json $(FPGA_JSON) --asc $(FPGA_ASC)
 else ifeq ($(TARGET),5k)
 	SRC += ./top/upduino.v
 	ARACHNEFLAGS = -d 5k -P sg48
 	ICETIMEFLAGS = -d up5k -P sg48
 	FPGA_PINMAP = ./pinmap/upduino.pcf
 	ICEPROG_PARAM = -d i:0x0403:0x6014
+#	NEXTPNRFLAGS = --up5k --package sg48 --pcf $(FPGA_PINMAP) --freq 12 --opt-timing --json $(FPGA_JSON) --asc $(FPGA_ASC)
 else ifeq ($(TARGET),8k)
 	SRC += ./top/hx8k.v
 	ARACHNEFLAGS = -d 8k -P ct256
 	FPGA_PINMAP = ./pinmap/hx8k.pcf
+#	NEXTPNRFLAGS = --hx8k --package ct256 --pcf $(FPGA_PINMAP) --freq 12 --opt-timing --json $(FPGA_JSON) --asc $(FPGA_ASC)
 else ifeq ($(TARGET),tinybx)
 	SRC += ./top/tinybx.v
 	ARACHNEFLAGS = -d 8k -P cm81
 	FPGA_PINMAP = ./pinmap/tinybx.pcf
+	NEXTPNRFLAGS = --lp8k --package cm81 --pcf $(FPGA_PINMAP) --freq 16 --opt-timing --json $(FPGA_JSON) --asc $(FPGA_ASC)
 else
 endif
 
@@ -88,6 +93,9 @@ FPGA_BLIF_OUT = $(SYNTH_DIR)/_fpga.blif
 FPGA_TXT_OUT = $(SYNTH_DIR)/_fpga.txt
 FPGA_EX_OUT = $(SYNTH_DIR)/_fpga.ex
 FPGA_BIN_OUT = $(SYNTH_DIR)/_fpga.bin
+FPGA_JSON = $(SYNTH_DIR)/_fpga.json
+FPGA_ASC = $(SYNTH_DIR)/_fpga.asc
+FPGA_TIM_OUT = $(SYNTH_DIR)/_fpga_tim.rpt
 
 ###############################################################################
 # Tools
@@ -97,6 +105,7 @@ SIMULATOR = vvp
 VIEWER = gtkwave
 YOSYS = yosys
 ARACHNEPNR = arachne-pnr
+NEXTPNR = nextpnr-ice40
 ICEBOXEXPLAIN = icebox_explain
 ICEPACK = icepack
 ICEPROG = sudo iceprog
@@ -111,6 +120,7 @@ endif
 
 #Tool Options
 YOSYSFLAGS = -f "verilog -D__def_fw_img=\"$(FIRMWARE_DIR)/$(FIRMWARE_IMG).vhex\"" -p "synth_ice40 -blif $(FPGA_BLIF_OUT);"
+YOSYSFLAGS_NEXTPNR = -q -f 'verilog -D__def_fw_img="$(FIRMWARE_DIR)/$(FIRMWARE_IMG).vhex"' -p 'synth_ice40 -top top -json $(FPGA_JSON)'
 COFLAGS = -s tb_iceZ0mb1e -D__def_fw_img=\"$(FIRMWARE_DIR)/$(FIRMWARE_IMG).vhex\" -D__def_vcd_file=\"$(VCD_OUT)\"
 SFLAGS = -v
 SOUTPUT = -lxt
@@ -156,6 +166,27 @@ flash: $(FPGA_BIN_OUT)
 
 sram: $(FPGA_BIN_OUT)
 	$(ICEPROG) -S $(ICEPROG_PARAM) $(FPGA_BIN_OUT)
+
+
+###############################################################################
+# Synthesis using nextpnr
+# 'nextpnr' runs yosys, nextpnr, icepack and icetime
+###############################################################################
+nextpnr: $(FPGA_TIM_OUT)
+
+$(FPGA_JSON): firmware $(SRC)
+	-mkdir $(SYNTH_DIR)
+	$(YOSYS) $(YOSYSFLAGS_NEXTPNR) $(SRC)
+
+$(FPGA_ASC): $(FPGA_PINMAP) $(FPGA_JSON)
+	$(NEXTPNR) $(NEXTPNRFLAGS)
+
+$(FPGA_BIN_OUT): $(FPGA_ASC)
+	$(ICEPACK) $(FPGA_ASC) $(FPGA_BIN_OUT)
+
+$(FPGA_TIM_OUT): $(FPGA_BIN_OUT)
+	$(ICETIME) -mtr $(FPGA_TIM_OUT) $(FPGA_ASC)
+
 
 ###############################################################################
 serial:
