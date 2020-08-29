@@ -138,12 +138,16 @@ sim: firmware $(COMPILE_OUT) $(VCD_OUT)
 ###############################################################################
 # Synthesis
 ###############################################################################
-fpga: $(SRC) $(FPGA_PINMAP) firmware
+fpga: rtl/pll.v $(SRC) $(FPGA_PINMAP) firmware
 	-mkdir $(SYNTH_DIR)
 	$(YOSYS) -q -o $(SYNTH_OUT) $(YOSYSFLAGS) $(SRC)
 	$(ARACHNEPNR) $(ARACHNEFLAGS) -p $(FPGA_PINMAP) $(FPGA_BLIF_OUT) -o $(FPGA_TXT_OUT)
 	$(ICEBOXEXPLAIN) $(FPGA_TXT_OUT) > $(FPGA_EX_OUT)
 	$(ICEPACK) $(FPGA_TXT_OUT) $(FPGA_BIN_OUT)
+	
+rtl/pll.v:
+	icepll -i 16 -o 18 -m -f rtl/pll.v
+
 time:
 	$(ICETIME) -mt -p $(FPGA_PINMAP) $(ICETIMEFLAGS) $(FPGA_TXT_OUT)
 

@@ -37,12 +37,12 @@ module top(
 	input uart_rxd,
 	output i2c_scl,
 	inout i2c_sda,
-    output spi_sclk,
+ 	output spi_sclk,
 	output spi_mosi,
 	input  spi_miso,
-    output spi_cs,
-    output LED,   // User/boot LED next to power LED
-    output USBPU  // USB pull-up resistor
+	output spi_cs,
+	output LED,   // User/boot LED next to power LED
+	output USBPU  // USB pull-up resistor
 );
 
 	wire[7:0] P1_out;
@@ -62,6 +62,12 @@ module top(
 	assign D7 = P1_out[6];
 	assign D8 = P1_out[7];
 
+        wire clk_pll;
+        wire clk_locked;
+
+        pll pll18( .clock_in(clk), .clock_out(clk_pll), .locked( clk_locked ) );
+
+
 	SB_IO #(
 		.PIN_TYPE(6'b 1010_01),
 		.PULLUP(1'b 0)
@@ -73,7 +79,8 @@ module top(
 	);
 
 	iceZ0mb1e core (
-		.clk		(clk),
+		.clk		(clk_pll),
+		.rst_n          (clk_locked),
 		.uart_txd	(uart_txd),
 		.uart_rxd	(uart_rxd),
 		.i2c_scl	(i2c_scl),

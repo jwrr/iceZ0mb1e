@@ -30,6 +30,7 @@ module iceZ0mb1e  #(
 	parameter RAM_LOC = 16'h8000
 ) (
 	input clk,
+	input rst_n,
 	output uart_txd,
 	input uart_rxd,
 	output i2c_scl,
@@ -52,7 +53,7 @@ module iceZ0mb1e  #(
 	localparam RAM_SIZE = (1 << RAM_WIDTH);
 
 	//Z80 Bus:
-	reg         reset_n = 1'b0;
+	wire        reset_n = rst_n;
 	reg         wait_n = 1'b0;
 	reg         int_n = 1'b0;
 	reg         nmi_n = 1'b0;
@@ -86,7 +87,6 @@ module iceZ0mb1e  #(
 			int_n	<= 1'b1;
 			nmi_n	<= 1'b1;
 			busrq_n	<= 1'b1;
-			reset_n	<= 1'b1;
 		end
 	end
 
