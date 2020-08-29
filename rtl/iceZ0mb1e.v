@@ -25,7 +25,7 @@
 
 module iceZ0mb1e  #(
 	parameter RAM_TYPE = 0,
-	parameter RAM_WIDTH = 13,
+	parameter RAM_WIDTH = 12, // reduce from 8K to 4KByte (saves 8 EBRAM)
 	parameter ROM_WIDTH = 13,
 	parameter RAM_LOC = 16'h8000
 ) (
