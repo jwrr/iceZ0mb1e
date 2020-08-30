@@ -5,14 +5,12 @@
 */
 
 module z80usb (
-        input  pin_clk,
-        inout  pin_usb_p,
-        inout  pin_usb_n,
-        output pin_pu,
-        output pin_led,
-        output [3:0] debug,
+        input  clk,
+        inout  USBP,
+        inout  USBN,
+        output USBPU,
+        output LED,
 
-//         input clk,
         output D1,
         output D2,
         output D3,
@@ -40,16 +38,16 @@ module z80usb (
     wire clk_locked;
 
     // Use an icepll generated pll
-    pll pll48( .clock_in(pin_clk), .clock_out(clk_48mhz), .locked( clk_locked ) );
+    pll pll48( .clock_in(clk), .clock_out(clk_48mhz), .locked( clk_locked ) );
 
     // LED
     reg [24:0] ledCounter;
     reg        led;
-    always @(posedge pin_clk) begin
+    always @(posedge clk) begin
         ledCounter <= ledCounter + 1;
         led <= ledCounter[22];
     end
-//    assign pin_led = led;
+//    assign LED = led;
 
     // Generate reset signal
     reg [5:0] reset_cnt = 0;
@@ -77,8 +75,8 @@ module z80usb (
         .reset      (reset),
 
         // pins
-        .pin_usb_p( pin_usb_p ),
-        .pin_usb_n( pin_usb_n ),
+        .pin_usb_p( USBP ),
+        .pin_usb_n( USBN ),
 
         // uart pipeline in
         .uart_in_data( uart_in_data ),
@@ -93,7 +91,7 @@ module z80usb (
     );
 
     // USB Host Detect Pull Up
-    assign pin_pu = 1'b1;
+    assign USBPU = 1'b1;
 
 //
 // iceZ0mb1e - FPGA 8-Bit TV80 SoC for Lattice iCE40
@@ -121,7 +119,6 @@ module z80usb (
 //
 
 
-     wire clk = pin_clk;
      wire led; 
 	wire[7:0] P1_out;
 	wire[7:0] P2_out;
@@ -173,7 +170,6 @@ module z80usb (
 	
 
     assign LED = P1_out[0]; // blink_pattern[blink_counter[25:21]];
-    assign pin_led = P1_out[0]; // blink_pattern[blink_counter[25:21]];
 endmodule
 
 

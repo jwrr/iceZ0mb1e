@@ -36,7 +36,7 @@ SOURCES += $(Z80_DIR)/rtl/*.v
 
 SRC = ./top/$(PROJTOP).v $(SOURCES)
 
-PIN_DEF = ./pinmap/$(PROJTOP).pcf
+PIN_DEF = ./pinmap/tinybx.pcf
 
 DEVICE = lp8k
 PACKAGE = cm81
