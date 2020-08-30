@@ -47,7 +47,7 @@ module top(
    output USBPU  // USB pull-up resistor
 );
 
-   localparam USE_Z80 = 0;
+   localparam USE_Z80 = 1;
 
    wire[7:0] P1_out;
    wire[7:0] P2_out;
@@ -170,7 +170,8 @@ module top(
         // ===============================================================
     
     
-    assign LED = ledCounter[ 22 ]; // P1_out[0]; // blink_pattern[blink_counter[25:21]];
+//    assign LED = ledCounter[ 22 ]; // P1_out[0]; // blink_pattern[blink_counter[25:21]];
+    assign LED = P1_out[0]; // blink_pattern[blink_counter[25:21]];
 endmodule
 
 

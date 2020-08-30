@@ -34,7 +34,7 @@ SOURCES += $(Z80_DIR)/import/tv80/rtl/uart/*.v
 SOURCES += $(Z80_DIR)/rtl/*.v
 
 
-SRC = ./top/$(PROJTOP).v $(SOURCES)
+SRC = ./top/tinybx.v $(SOURCES)
 
 PIN_DEF = ./pinmap/tinybx.pcf
 
@@ -44,6 +44,7 @@ PACKAGE = cm81
 CLK_MHZ = 48
 # CLK_MHZ = 16
 
+# all:  $(PROJTOP).rpt $(PROJTOP).bin
 all:  $(PROJTOP).rpt $(PROJTOP).bin
 
 $(USB_DIR)/pll.v:
@@ -52,7 +53,7 @@ $(USB_DIR)/pll.v:
 synth: $(PROJTOP).json
 
 $(PROJTOP).json: $(SRC)
-	yosys -q -f "verilog -D__def_fw_img=\"$(FIRMWARE_DIR)/$(FIRMWARE_IMG).vhex\"" -p 'synth_ice40 -top $(PROJTOP) -json $@' $^
+	yosys -q -f "verilog -D__def_fw_img=\"$(FIRMWARE_DIR)/$(FIRMWARE_IMG).vhex\"" -p 'synth_ice40 -top top  -json $@' $^
 
 %.asc: $(PIN_DEF) %.json
 	nextpnr-ice40 --$(DEVICE) --freq $(CLK_MHZ) --opt-timing --timing-allow-fail --package $(PACKAGE) --pcf $(PIN_DEF) --json $*.json --asc $@
