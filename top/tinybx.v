@@ -42,6 +42,8 @@ module top(
 	input  spi_miso,
 	output spi_cs,
 	output LED,   // User/boot LED next to power LED
+        inout  USBP,
+        inout  USBN,
 	output USBPU  // USB pull-up resistor
 );
 
@@ -62,12 +64,6 @@ module top(
 	assign D7 = P1_out[6];
 	assign D8 = P1_out[7];
 
-        wire clk_pll;
-        wire clk_locked;
-
-        pll pll18( .clock_in(clk), .clock_out(clk_pll), .locked( clk_locked ) );
-
-
 	SB_IO #(
 		.PIN_TYPE(6'b 1010_01),
 		.PULLUP(1'b 0)
@@ -78,19 +74,33 @@ module top(
 		.D_IN_0(i2c_sda_in)
 	);
 
+        wire clk_48mhz;
+        wire clk_locked;
+
+        pll pll48( .clock_in(clk), .clock_out(clk_48mhz), .locked( clk_locked ) );
+
+        // Generate reset signal
+        reg [5:0] reset_cnt = 0;
+        wire reset = ~reset_cnt[5];
+        always @(posedge clk_48mhz)
+          if ( clk_locked )
+            reset_cnt <= reset_cnt + reset;
+
+         wire rst_n = ~reset;
+
 	iceZ0mb1e core (
 		.clk		(clk),
-		.rst_n          (clk_locked),
+		.rst_n          (rst_n),
 		.uart_txd	(uart_txd),
 		.uart_rxd	(uart_rxd),
 		.i2c_scl	(i2c_scl),
 		.i2c_sda_in	(i2c_sda_in),
 		.i2c_sda_out	(i2c_sda_out),
 		.i2c_sda_oen	(i2c_sda_oen),
-    	.spi_sclk	(spi_sclk),
+ 		.spi_sclk	(spi_sclk),
 		.spi_mosi	(spi_mosi),
 		.spi_miso	(spi_miso),
-    	.spi_cs		(spi_cs),
+ 		.spi_cs		(spi_cs),
 		.P1_out		(P1_out),
 		.P1_in		(8'h55),
 		.P1_oen		(),
@@ -101,6 +111,34 @@ module top(
 	);
 	
 
+    // uart pipeline in
+    wire [7:0] uart_in_data;
+    wire       uart_in_valid;
+    wire       uart_in_ready;
+
+    // usb uart - this instanciates the entire USB device.
+    usb_uart uart (
+        .clk_48mhz  (clk_48mhz),
+        .reset      (reset),
+
+        // pins
+        .pin_usb_p( USBP ),
+        .pin_usb_n( USBN ),
+
+        // uart pipeline in
+        .uart_in_data( uart_in_data ),
+        .uart_in_valid( uart_in_valid ),
+        .uart_in_ready( uart_in_ready ),
+
+        .uart_out_data( uart_in_data ),
+        .uart_out_valid( uart_in_valid ),
+        .uart_out_ready( uart_in_ready  )
+
+        //.debug( debug )
+    );
+
+    // USB Host Detect Pull Up
+    assign USBPU = 1'b1;
 
 	
     // ================================================================
@@ -109,7 +147,6 @@ module top(
 
     wire CLK = clk;
     // drive USB pull-up resistor to '0' to disable USB
-    assign USBPU = 0;
 
     // look in pins.pcf for all the pin names on the TinyFPGA BX board
     ////////

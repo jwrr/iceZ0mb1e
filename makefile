@@ -23,10 +23,33 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+
+###############################################################################
+# USB
+###############################################################################
+USB_DIR = tinyfpga_bx_usbserial
+SRC = \
+	$(USB_DIR)/usb/edge_detect.v \
+	$(USB_DIR)/usb/serial.v \
+	$(USB_DIR)/usb/usb_fs_in_arb.v \
+	$(USB_DIR)/usb/usb_fs_in_pe.v \
+	$(USB_DIR)/usb/usb_fs_out_arb.v \
+	$(USB_DIR)/usb/usb_fs_out_pe.v \
+	$(USB_DIR)/usb/usb_fs_pe.v \
+	$(USB_DIR)/usb/usb_fs_rx.v \
+	$(USB_DIR)/usb/usb_fs_tx_mux.v \
+	$(USB_DIR)/usb/usb_fs_tx.v \
+	$(USB_DIR)/usb/usb_reset_det.v \
+	$(USB_DIR)/usb/usb_serial_ctrl_ep.v \
+	$(USB_DIR)/usb/usb_uart_bridge_ep.v \
+	$(USB_DIR)/usb/usb_uart_core.v \
+	$(USB_DIR)/usb/usb_uart_i40.v
+
+
 ###############################################################################
 # Hardware
 ###############################################################################
-SRC  = ./import/tv80/rtl/core/*.v
+SRC += ./import/tv80/rtl/core/*.v
 SRC += ./import/tv80/rtl/uart/*.v
 SRC += ./rtl/*.v
 TESTBENCH = ./tb/tb_iceZ0mb1e.v
@@ -77,7 +100,8 @@ else ifeq ($(TARGET),tinybx)
 	SRC += ./top/tinybx.v
 	ARACHNEFLAGS = -d 8k -P cm81
 	FPGA_PINMAP = ./pinmap/tinybx.pcf
-	NEXTPNRFLAGS = --lp8k --package cm81 --pcf $(FPGA_PINMAP) --freq 16 --opt-timing --json $(FPGA_JSON) --asc $(FPGA_ASC)
+	NEXTPNRFLAGS = --lp8k --package cm81 --pcf $(FPGA_PINMAP) --freq 48 --timing-allow-fail --opt-timing --json $(FPGA_JSON) --asc $(FPGA_ASC)
+
 else
 endif
 
