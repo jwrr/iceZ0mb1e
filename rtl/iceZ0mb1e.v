@@ -4,22 +4,22 @@
 //
 // Copyright (c) 2018 Franz Neumann (netinside2000@gmx.de)
 //
-// Permission is hereby granted, free of charge, to any person obtaining a 
-// copy of this software and associated documentation files (the "Software"), 
-// to deal in the Software without restriction, including without limitation 
-// the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-// and/or sell copies of the Software, and to permit persons to whom the 
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom the
 // Software is furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included 
+// The above copyright notice and this permission notice shall be included
 // in all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
@@ -30,30 +30,33 @@ module iceZ0mb1e  #(
 	parameter RAM_LOC = 16'h8000
 ) (
 	input clk,
-	input rst_n,
+	input rst,
 	output uart_txd,
 	input uart_rxd,
 	output i2c_scl,
 	input i2c_sda_in,
 	output i2c_sda_out,
 	output i2c_sda_oen,
-    output spi_sclk,
+	output spi_sclk,
 	output spi_mosi,
 	input  spi_miso,
-    output spi_cs,
-    output[7:0] P1_out,
-    input[7:0] P1_in,
-    output P1_oen,
-    output[7:0] P2_out,
-    input[7:0] P2_in,
-    output P2_oen,
+ 	output spi_cs,
+ 	output[7:0] P1_out,
+ 	input[7:0] P1_in,
+	output P1_oen,
+	output[7:0] P2_out,
+	input[7:0] P2_in,
+	output P2_oen,
+	inout  USBP,
+	inout  USBN,
+	output USBPU,
 	output debug
 );
 	localparam ROM_SIZE = (1 << ROM_WIDTH);
 	localparam RAM_SIZE = (1 << RAM_WIDTH);
 
 	//Z80 Bus:
-	wire        reset_n = rst_n;
+	wire        reset_n;
 	reg         wait_n = 1'b0;
 	reg         int_n = 1'b0;
 	reg         nmi_n = 1'b0;
@@ -257,6 +260,59 @@ endgenerate
 		.wr_n		(wr_n),
 		.addr		(addr[3:0])
 	);
+
+
+
+        // ===============================================================
+        // ===============================================================
+        // ===============================================================
+        // ===============================================================
+
+
+    wire clk_48mhz;
+    wire clk_locked;
+
+    pll pll48( .clock_in(clk), .clock_out(clk_48mhz), .locked( clk_locked ) );
+
+    // Generate reset signal
+    reg [5:0] reset_cnt = 0;
+    wire      reset = ~reset_cnt[5];
+    wire      reset2 = rst | reset;
+    assign    reset_n = ~reset2;
+
+    always @(posedge clk_48mhz) begin
+       if (clk_locked) begin
+          reset_cnt <= reset_cnt + reset;
+       end
+    end
+
+    // USB Host Detect Pull Up
+    assign     USBPU = 1'b1;
+    wire [7:0] uart_in_data;
+    wire       uart_in_valid;
+    wire       uart_in_ready;
+
+    // usb uart - this instanciates the entire USB device.
+    usb_uart uart (
+        .clk_48mhz  (clk_48mhz),
+        .reset      (reset2),
+
+        // pins
+        .pin_usb_p( USBP ),
+        .pin_usb_n( USBN ),
+
+        // uart pipeline in
+        .uart_in_data( uart_in_data ),
+        .uart_in_valid( uart_in_valid ),
+        .uart_in_ready( uart_in_ready ),
+
+        .uart_out_data( uart_in_data ),
+        .uart_out_valid( uart_in_valid ),
+        .uart_out_ready( uart_in_ready  )
+
+        //.debug( debug )
+    );
+
 
 
 endmodule

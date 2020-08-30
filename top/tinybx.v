@@ -76,25 +76,11 @@ module top(
       .D_IN_0(i2c_sda_in)
    );
 
-   wire clk_48mhz;
-   wire clk_locked;
-
-   pll pll48( .clock_in(clk), .clock_out(clk_48mhz), .locked( clk_locked ) );
-
-   // Generate reset signal
-   reg [5:0] reset_cnt = 0;
-   wire reset = ~reset_cnt[5];
-   always @(posedge clk_48mhz)
-       if ( clk_locked )
-           reset_cnt <= reset_cnt + reset;
-
-    wire rst_n = ~reset;
-
     generate
         if (USE_Z80) begin
             iceZ0mb1e z80_core (
                 .clk          (clk),
-                .rst_n        (rst_n),
+                .rst          (1'b0),
                 .uart_txd     (uart_txd),
                 .uart_rxd     (uart_rxd),
                 .i2c_scl      (i2c_scl),
@@ -111,6 +97,9 @@ module top(
                 .P2_out       (P2_out),
                 .P2_in        (8'hAA),
                 .P2_oen       (),
+                .USBP         (USBP),
+                .USBN         (USBN),
+                .USBPU        (USBPU),
                 .debug        ()
             );
         end
@@ -124,53 +113,10 @@ module top(
            assign spi_cs      = 1'b0;
            assign P1_out      = 8'b0;
            assign P2_out      = 8'b0;
+           assign USBPU       = 1'b0;
         end
     endgenerate
-        // ===============================================================
-        // ===============================================================
-        // ===============================================================
-        // ===============================================================
 
-    // USB Host Detect Pull Up
-    assign USBPU = 1'b1;
-
-        
-    wire [7:0] uart_in_data;
-    wire       uart_in_valid;
-    wire       uart_in_ready;
-
-    // usb uart - this instanciates the entire USB device.
-    usb_uart uart (
-        .clk_48mhz  (clk_48mhz),
-        .reset      (reset),
-
-        // pins
-        .pin_usb_p( USBP ),
-        .pin_usb_n( USBN ),
-
-        // uart pipeline in
-        .uart_in_data( uart_in_data ),
-        .uart_in_valid( uart_in_valid ),
-        .uart_in_ready( uart_in_ready ),
-
-        .uart_out_data( uart_in_data ),
-        .uart_out_valid( uart_in_valid ),
-        .uart_out_ready( uart_in_ready  )
-
-        //.debug( debug )
-    );
-
-        // ===============================================================
-        // FROM USB PROJECT
-    // LED
-    reg [22:0] ledCounter;
-    always @(posedge clk_48mhz) begin
-        ledCounter <= ledCounter + 1;
-    end
-        // ===============================================================
-    
-    
-//    assign LED = ledCounter[ 22 ]; // P1_out[0]; // blink_pattern[blink_counter[25:21]];
     assign LED = P1_out[0]; // blink_pattern[blink_counter[25:21]];
 endmodule
 
