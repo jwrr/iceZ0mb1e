@@ -24,94 +24,117 @@
 //
 
 module top(
-	input clk,
-	output D1,
-	output D2,
-	output D3,
-	output D4,
-	output D5,
-	output D6,
-	output D7,
-	output D8,
-	output uart_txd,
-	input uart_rxd,
-	output i2c_scl,
-	inout i2c_sda,
- 	output spi_sclk,
-	output spi_mosi,
-	input  spi_miso,
-	output spi_cs,
-	output LED,   // User/boot LED next to power LED
-        inout  USBP,
-        inout  USBN,
-	output USBPU  // USB pull-up resistor
+   input clk,
+   output D1,
+   output D2,
+   output D3,
+   output D4,
+   output D5,
+   output D6,
+   output D7,
+   output D8,
+   output uart_txd,
+   input uart_rxd,
+   output i2c_scl,
+   inout i2c_sda,
+   output spi_sclk,
+   output spi_mosi,
+   input  spi_miso,
+   output spi_cs,
+   output LED,   // User/boot LED next to power LED
+   inout  USBP,
+   inout  USBN,
+   output USBPU  // USB pull-up resistor
 );
 
-	wire[7:0] P1_out;
-	wire[7:0] P2_out;
+   localparam USE_Z80 = 0;
 
-	wire i2c_scl;
-	wire i2c_sda_out;
-	wire i2c_sda_in;
-	wire i2c_sda_oen;
+   wire[7:0] P1_out;
+   wire[7:0] P2_out;
 
-	assign D1 = P1_out[0];
-	assign D2 = P1_out[1];
-	assign D3 = P1_out[2];
-	assign D4 = P1_out[3];
-	assign D5 = P1_out[4];
-	assign D6 = P1_out[5];
-	assign D7 = P1_out[6];
-	assign D8 = P1_out[7];
+   wire i2c_scl;
+   wire i2c_sda_out;
+   wire i2c_sda_in;
+   wire i2c_sda_oen;
 
-	SB_IO #(
-		.PIN_TYPE(6'b 1010_01),
-		.PULLUP(1'b 0)
-	) i2c_sda_pin (
-		.PACKAGE_PIN(i2c_sda),
-		.OUTPUT_ENABLE(i2c_sda_oen),
-		.D_OUT_0(i2c_sda_out),
-		.D_IN_0(i2c_sda_in)
-	);
+   assign D1 = P1_out[0];
+   assign D2 = P1_out[1];
+   assign D3 = P1_out[2];
+   assign D4 = P1_out[3];
+   assign D5 = P1_out[4];
+   assign D6 = P1_out[5];
+   assign D7 = P1_out[6];
+   assign D8 = P1_out[7];
 
-        wire clk_48mhz;
-        wire clk_locked;
+   SB_IO #(
+      .PIN_TYPE(6'b 1010_01),
+      .PULLUP(1'b 0)
+   ) i2c_sda_pin (
+      .PACKAGE_PIN(i2c_sda),
+      .OUTPUT_ENABLE(i2c_sda_oen),
+      .D_OUT_0(i2c_sda_out),
+      .D_IN_0(i2c_sda_in)
+   );
 
-        pll pll48( .clock_in(clk), .clock_out(clk_48mhz), .locked( clk_locked ) );
+   wire clk_48mhz;
+   wire clk_locked;
 
-        // Generate reset signal
-        reg [5:0] reset_cnt = 0;
-        wire reset = ~reset_cnt[5];
-        always @(posedge clk_48mhz)
-          if ( clk_locked )
-            reset_cnt <= reset_cnt + reset;
+   pll pll48( .clock_in(clk), .clock_out(clk_48mhz), .locked( clk_locked ) );
 
-         wire rst_n = ~reset;
+   // Generate reset signal
+   reg [5:0] reset_cnt = 0;
+   wire reset = ~reset_cnt[5];
+   always @(posedge clk_48mhz)
+       if ( clk_locked )
+           reset_cnt <= reset_cnt + reset;
 
-	iceZ0mb1e core (
-		.clk		(clk),
-		.rst_n          (rst_n),
-		.uart_txd	(uart_txd),
-		.uart_rxd	(uart_rxd),
-		.i2c_scl	(i2c_scl),
-		.i2c_sda_in	(i2c_sda_in),
-		.i2c_sda_out	(i2c_sda_out),
-		.i2c_sda_oen	(i2c_sda_oen),
- 		.spi_sclk	(spi_sclk),
-		.spi_mosi	(spi_mosi),
-		.spi_miso	(spi_miso),
- 		.spi_cs		(spi_cs),
-		.P1_out		(P1_out),
-		.P1_in		(8'h55),
-		.P1_oen		(),
-		.P2_out		(P2_out),
-		.P2_in		(8'hAA),
-		.P2_oen		(),
-		.debug		()
-	);
-	
+    wire rst_n = ~reset;
 
-    // uart pipeline in
+    generate
+        if (USE_Z80) begin
+            iceZ0mb1e z80_core (
+                .clk          (clk),
+                .rst_n        (rst_n),
+                .uart_txd     (uart_txd),
+                .uart_rxd     (uart_rxd),
+                .i2c_scl      (i2c_scl),
+                .i2c_sda_in   (i2c_sda_in),
+                .i2c_sda_out  (i2c_sda_out),
+                .i2c_sda_oen  (i2c_sda_oen),
+                .spi_sclk     (spi_sclk),
+                .spi_mosi     (spi_mosi),
+                .spi_miso     (spi_miso),
+                .spi_cs	      (spi_cs),
+                .P1_out       (P1_out),
+                .P1_in        (8'h55),
+                .P1_oen       (),
+                .P2_out       (P2_out),
+                .P2_in        (8'hAA),
+                .P2_oen       (),
+                .debug        ()
+            );
+        end
+        else begin
+           assign uart_txd    = 1'b0;
+           assign i2c_scl     = 1'b0;
+           assign i2c_sda_out = 1'b0;
+           assign i2c_sda_oen = 1'b0;
+           assign spi_sclk    = 1'b0;
+           assign spi_mosi    = 1'b0;
+           assign spi_cs      = 1'b0;
+           assign P1_out      = 8'b0;
+           assign P2_out      = 8'b0;
+        end
+    endgenerate
+        // ===============================================================
+        // ===============================================================
+        // ===============================================================
+        // ===============================================================
+
+    // USB Host Detect Pull Up
+    assign USBPU = 1'b1;
+
+        
     wire [7:0] uart_in_data;
     wire       uart_in_valid;
     wire       uart_in_ready;
@@ -137,36 +160,17 @@ module top(
         //.debug( debug )
     );
 
-    // USB Host Detect Pull Up
-    assign USBPU = 1'b1;
-
-	
-    // ================================================================
-    // ================================================================
-    // ================================================================
-
-    wire CLK = clk;
-    // drive USB pull-up resistor to '0' to disable USB
-
-    // look in pins.pcf for all the pin names on the TinyFPGA BX board
-    ////////
-    // make a simple blink circuit
-    ////////
-
-    // keep track of time and location in blink_pattern
-    reg [25:0] blink_counter;
-
-    // pattern that will be flashed over the LED over time
-    wire [31:0] blink_pattern = 32'b101010001110111011100010101;
-
-    // increment the blink_counter every clock
-    always @(posedge CLK) begin
-        blink_counter <= blink_counter + 1;
+        // ===============================================================
+        // FROM USB PROJECT
+    // LED
+    reg [22:0] ledCounter;
+    always @(posedge clk_48mhz) begin
+        ledCounter <= ledCounter + 1;
     end
+        // ===============================================================
     
-    // light up the LED according to the pattern
-//    assign LED = blink_pattern[blink_counter[25:21]];
-    assign LED = P1_out[0]; // blink_pattern[blink_counter[25:21]];
+    
+    assign LED = ledCounter[ 22 ]; // P1_out[0]; // blink_pattern[blink_counter[25:21]];
 endmodule
 
 
