@@ -277,8 +277,8 @@ endgenerate
     // Generate reset signal
     reg [5:0] reset_cnt = 0;
     wire      reset = ~reset_cnt[5];
-    wire      reset2 = rst | reset;
-    assign    reset_n = ~reset2;
+    wire      rst_48mhz = rst | reset;
+    assign    reset_n = ~rst_48mhz;
 
     always @(posedge clk_48mhz) begin
        if (clk_locked) begin
@@ -286,29 +286,17 @@ endgenerate
        end
     end
 
-    // USB Host Detect Pull Up
-    assign     USBPU = 1'b1;
-    wire [7:0] uart_in_data;
-    wire       uart_in_valid;
-    wire       uart_in_ready;
-
     // usb uart - this instanciates the entire USB device.
-    usb_uart uart (
+    simpleusb_wrapper usb0 (
+        .clk        (clk),
+        .rst_n      (rst_n),
         .clk_48mhz  (clk_48mhz),
-        .reset      (reset2),
+        .rst_48mhz  (rst_48mhz),
 
         // pins
-        .pin_usb_p( USBP ),
-        .pin_usb_n( USBN ),
-
-        // uart pipeline in
-        .uart_in_data( uart_in_data ),
-        .uart_in_valid( uart_in_valid ),
-        .uart_in_ready( uart_in_ready ),
-
-        .uart_out_data( uart_in_data ),
-        .uart_out_valid( uart_in_valid ),
-        .uart_out_ready( uart_in_ready  )
+        .pin_usb_p  (USBP),
+        .pin_usb_n  (USBN),
+        .pin_usb_pu (USBPU),
 
         //.debug( debug )
     );
