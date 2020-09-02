@@ -212,6 +212,20 @@ void morse(char* str)
     }
 } // morse
 
+
+char rot18(char c)
+{        
+    if (('a' <= c) && (c <= 'z')) {
+        c = 'a' + ( (c - 'a' + 13) % 26);
+    } else if (('A' <= c) && (c <= 'Z')) {
+        c = 'A' + ( (c - 'A' + 13) % 26);
+    } else if (('0' <= c) && (c <= '9')) {
+        c = '0' + ( (c - '0 '+ 5) % 10);
+    }
+    return c;
+} //rot18
+
+
 void main ()
 {
     uint16_t *addr;
@@ -265,19 +279,24 @@ void main ()
 asdfasdf */
 
     // ========================================================================
-
-//     uint8_t aaa;
-//     int pwm_cnt = 0;
-//     port_a = (pwm_cnt % 64) ? 0x00 : 0x00;
+//
+// //    port_a = (pwm_cnt % 64) ? 0x00 : 0x00;
 //     while (1) {
-// //         if (usb_status==0x03)  {
-// //             port_a = 0xff;
-//             timer_delay_ms(1000); // wait 10 seconds between messages
-//             aaa = usb_dat_in;
-//             usb_dat_out = 'a'; // usb_dat_in;
-// //         }
-//         pwm_cnt++;
+//         timer_delay_ms(10); // wait 10 seconds between messages
+//         if (usb_status & 0x01) {
+//             usb_dat_out = usb_dat_in;
+//         }
 //     }
+//
+    // ========================================================================
+    // ROT18 = ROT13 FOR LETTERS and ROT5 for NUMBERS
+    
+    while (1) {
+        timer_delay_ms(10); // wait 10 seconds between messages
+        if (usb_status & 0x01) {
+            usb_dat_out = rot18(usb_dat_in);
+        }
+    }
 
     // ========================================================================
 

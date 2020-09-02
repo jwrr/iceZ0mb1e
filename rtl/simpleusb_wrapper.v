@@ -56,15 +56,25 @@ module simpleusb_wrapper (
     reg    [7:0] read_data;
     wire         uart_out_valid;
 
-    reg  [1:0]     rx_valid_cdc;
+    reg  [1:0]   rx_valid_cdc;
     always @(posedge clk) rx_valid_cdc <= {rx_valid_cdc[0], uart_out_valid};
-    wire          rx_valid = rx_valid_cdc[1];
+    wire         rx_valid = rx_valid_cdc[1];
+    
+    reg          rx_valid2;
+    always @(posedge clk) begin
+        rx_valid2 <= rx_valid;
+        if (rx_valid & ~rx_valid2) begin // rising edge
+           debug = ~debug;
+        end
+    end
+        
 
 
     reg  [1:0]     tx_ready_cdc;
     wire           uart_in_ready;
     always @(posedge clk) tx_ready_cdc <= {tx_ready_cdc[0], uart_in_ready};
     wire          tx_ready = tx_ready_cdc[1];
+
 
     wire         tx_ready;
     wire   [7:0] reg_status = {6'b0, tx_ready, rx_valid};
@@ -79,6 +89,7 @@ module simpleusb_wrapper (
     end
     assign data_out = read_sel ? read_data : 8'b0;
 
+
     wire read_stat1 = read_sel && addr==STAT;
     reg  read_stat2;
     always @(posedge clk)
@@ -88,8 +99,8 @@ module simpleusb_wrapper (
     wire read_stat_pulse = !read_stat1 & read_stat2;  // trailing edge
 
 
-
-    wire read_rx1 = read_sel && addr==RECV;
+    reg read_rx1;
+    always @(posedge clk) read_rx1 <= read_sel && addr==RECV;
     reg  [2:0] read_rx_cdc;
     reg        read_rx_pulse;
     wire [7:0] uart_out_data;
@@ -98,17 +109,22 @@ module simpleusb_wrapper (
     begin
         read_rx_cdc <= {read_rx_cdc[1:0], read_rx1};
         read_rx_pulse <= read_rx_cdc[2:1] == 2'b10; // trailing edge
-        if (uart_out_valid && uart_out_ready) rx_data <= uart_out_data;
+        if (uart_out_valid) rx_data <= uart_out_data;
     end
 
 
     wire        write_tx1 = write_sel && addr==SEND;
     reg  [2:0]  write_tx_cdc;
     reg         write_tx_pulse;
+    reg         uart_out_valid2;
     always @(posedge clk_48mhz)
     begin
         write_tx_cdc <= {write_tx_cdc[1:0], write_tx1};
-        write_tx_pulse = write_tx_cdc[2:1] == 2'b01; // leading edge
+        if (write_tx_cdc[2:1] == 2'b01)
+           write_tx_pulse <= 1'b1;
+        else if (uart_in_ready) begin
+           write_tx_pulse <= 1'b0;
+        end
     end
 
 
@@ -119,12 +135,14 @@ module simpleusb_wrapper (
 
     wire loopback = 1'b1;
 //     wire [7:0] uart_in_data   = loopback ? uart_out_data  : tx_data;
-    wire [7:0] uart_in_data   = loopback ? tx_data  : tx_data;
-    wire       uart_in_valid  = loopback ? uart_out_valid : write_tx_pulse;
-    wire       uart_in_valid  = loopback ? uart_out_valid : write_tx_pulse;
-    wire       uart_out_ready = loopback ? uart_in_ready  : read_rx_pulse;
+//     wire       uart_in_valid  = loopback ? uart_out_valid : write_tx_pulse;
+//    wire       uart_out_ready = loopback ? uart_in_ready  : read_rx_pulse;
+    wire [7:0] uart_in_data   = tx_data;
+    wire       uart_in_valid  = write_tx_pulse;
+    wire       uart_out_ready = read_rx_pulse;
 
     reg [9:0] fake_cnt;
+
 
     generate
     if (GEN_USB==1) begin
@@ -136,13 +154,13 @@ module simpleusb_wrapper (
 
         .uart_out_data  (uart_out_data),   // output [7:0]
         .uart_out_valid (uart_out_valid),  // output rx fifo not empty (status)
-        .uart_out_ready (uart_out_ready),  // input  read from rx fifo
+        .uart_out_ready (uart_out_ready),  // input  read from host (rx fifo)
 
         .uart_in_data   (uart_in_data),    // input  [7:0]
-        .uart_in_valid  (uart_in_valid),   // input  write to tx fifo
+        .uart_in_valid  (uart_in_valid),   // input  write to host (tx fifo)
         .uart_in_ready  (uart_in_ready),   // output tx fifo not full (status)
 
-        .debug          (debug)            // output [11:0]
+// FIXME         .debug          (debug)            // output [11:0]
     );
     end
     else begin
@@ -162,5 +180,8 @@ module simpleusb_wrapper (
        assign uart_out_data  = fake_cnt[9:2];
     end
     endgenerate
+
+    
+
 
 endmodule
