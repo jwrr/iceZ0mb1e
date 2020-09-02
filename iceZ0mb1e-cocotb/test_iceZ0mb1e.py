@@ -19,10 +19,7 @@ from cocotb.scoreboard import Scoreboard
 from monitors.spi import SPIPeripheralMonitor
 
 
-
-
- 
-def spi_input_gen():
+def spi_input_gen():  # not used yet
     """Generator for input data applied by BitDriver.
 
     Continually yield a tuple with the number of cycles to be on
@@ -43,11 +40,13 @@ def spi_input_gen():
 async def run_test(dut):
 
     en_gpio_loopback_test = False
-    en_spi_test = True
+    en_spi_test = False
 
 
-    clk = Clock(dut.clk, 31, units="ns")  # Create a 10us period clock on port clk
+    clk = Clock(dut.clk, 10, units="ns")  # Create a 10us period clock on port clk
     cocotb.fork(clk.start())  # Start the clock
+
+    dut.rst = 0
 
     dut.uart_txd = 0
     await FallingEdge(dut.clk)
@@ -106,11 +105,10 @@ async def run_test(dut):
 
 
     if en_spi_test:
-        dv = DVTest(dut, "SPI Loopback", msg_lvl="All")
 
         dv.info("SPI Test (random modes and speeds)")
 
-        spi_n = 20
+        spi_n = 15
         spi_peripheral_expect = []
         spi_scoreboard_expect = []
         spi_peripheral_response = []
@@ -160,117 +158,17 @@ async def run_test(dut):
         dv.is_true(scoreboard.result, "SPI Test Scoreboard")
 
 
-    ### =============================================================================================================
+        ### =============================================================================================================
 
-    dv = DVTest(dut, "GPIO Loopback", msg_lvl="All")
-    dv.info("Wait a long time")
-#     for i in range(400):
-    for i in range(1):
-        dv.info("{} 100k clocks".format(i) )
-#         await ClockCycles(dut.clk, 100000)
-        await ClockCycles(dut.clk, 10000)
-    dv.info("I'm done waiting'")
-        
+    en_timer_test = True
+    if en_timer_test:
+        for i in range(30):
+            await ClockCycles(dut.clk,1000)
+            print("{} clocks".format(i*1000) )
 
 
 # Register the test.
 factory = TestFactory(run_test)
 factory.generate_tests()
-
-
-## ================================================================
-#
-# def input_gen():
-#     """Generator for input data applied by BitDriver.
-#
-#     Continually yield a tuple with the number of cycles to be on
-#     followed by the number of cycles to be off.
-#     """
-#     while True:
-#         yield random.randint(1, 5), random.randint(1, 5)
-#
-#
-# class DFF_TB(object):
-#     def __init__(self, dut, init_val):
-#         """
-#         Setup the testbench.
-#
-#         *init_val* signifies the ``BinaryValue`` which must be captured by the
-#         output monitor with the first rising clock edge.
-#         This must match the initial state of the D flip-flop in RTL.
-#         """
-#         # Some internal state
-#         self.dut = dut
-#         self.stopped = False
-#
-#         # Create input driver and output monitor
-#         self.input_drv = BitDriver(signal=dut.d, clk=dut.c, generator=input_gen())
-#         self.output_mon = BitMonitor(name="output", signal=dut.q, clk=dut.c)
-#
-#         # Create a scoreboard on the outputs
-#         self.expected_output = [init_val]  # a list with init_val as the first element
-#         self.scoreboard = Scoreboard(dut)
-#         self.scoreboard.add_interface(self.output_mon, self.expected_output)
-#
-#         # Use the input monitor to reconstruct the transactions from the pins
-#         # and send them to our 'model' of the design.
-#         self.input_mon = BitMonitor(name="input", signal=dut.d, clk=dut.c,
-#                                     callback=self.model)
-#
-#     def model(self, transaction):
-#         """Model the DUT based on the input *transaction*.
-#
-#         For a D flip-flop, what goes in at ``d`` comes out on ``q``,
-#         so the value on ``d`` (put into *transaction* by our ``input_mon``)
-#         can be used as expected output without change.
-#         Thus we can directly append *transaction* to the ``expected_output`` list,
-#         except for the very last clock cycle of the simulation
-#         (that is, after ``stop()`` has been called).
-#         """
-#         if not self.stopped:
-#             self.expected_output.append(transaction)
-#
-#     def start(self):
-#         """Start generating input data."""
-#         self.input_drv.start()
-#
-#     def stop(self):
-#         """Stop generating input data.
-#
-#         Also stop generation of expected output transactions.
-#         One more clock cycle must be executed afterwards so that the output of
-#         the D flip-flop can be checked.
-#         """
-#         self.input_drv.stop()
-#         self.stopped = True
-#
-#
-# async def run_test(dut):
-#     """Setup testbench and run a test."""
-#
-#     cocotb.fork(Clock(dut.c, 10, 'us').start(start_high=False))
-#
-#     tb = DFF_TB(dut, init_val=BinaryValue(0))
-#
-#     clkedge = RisingEdge(dut.c)
-#
-#     # Apply random input data by input_gen via BitDriver for 100 clock cycles.
-#     tb.start()
-#     for _ in range(100):
-#         await clkedge
-#
-#     # Stop generation of input data. One more clock cycle is needed to capture
-#     # the resulting output of the DUT.
-#     tb.stop()
-#     await clkedge
-#
-#     # Print result of scoreboard.
-#     raise tb.scoreboard.result
-#
-#
-# # Register the test.
-# factory = TestFactory(run_test)
-# factory.generate_tests()
-
 
 

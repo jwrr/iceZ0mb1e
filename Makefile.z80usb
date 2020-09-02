@@ -20,8 +20,7 @@ SOURCES = \
 	$(USB_DIR)/usb/usb_serial_ctrl_ep.v \
 	$(USB_DIR)/usb/usb_uart_bridge_ep.v \
 	$(USB_DIR)/usb/usb_uart_core.v \
-	$(USB_DIR)/usb/usb_uart_i40.v \
- 	$(USB_DIR)/pll.v
+	$(USB_DIR)/usb/usb_uart_i40.v
 
 Z80_DIR = .
 FIRMWARE_DIR = $(Z80_DIR)/firmware
@@ -34,7 +33,7 @@ SOURCES += $(Z80_DIR)/import/tv80/rtl/uart/*.v
 SOURCES += $(Z80_DIR)/rtl/*.v
 
 
-SRC = ./top/tinybx.v $(SOURCES)
+SRC = rtl/pll.v  top/tinybx.v $(SOURCES)
 
 PIN_DEF = ./pinmap/tinybx.pcf
 
@@ -47,8 +46,8 @@ CLK_MHZ = 48
 # all:  $(PROJTOP).rpt $(PROJTOP).bin
 all:  $(PROJTOP).rpt $(PROJTOP).bin
 
-$(USB_DIR)/pll.v:
-	icepll -i 16 -o $(CLK_MHZ) -m -f $@
+rtl/pll.v:
+	icepll -i 16 -o $(CLK_MHZ) -m -f rtl/pll.v
 
 synth: $(PROJTOP).json
 
@@ -74,7 +73,7 @@ copy: # copy local files that have been changed
 	cp -ruv submodules/iceZ0mb1e_tweaks/* submodules/iceZ0mb1e
 
 clean:
-	rm -f $(PROJTOP).json $(PROJTOP).asc $(PROJTOP).rpt $(PROJTOP).bin pll.v
+	rm -f $(PROJTOP).json $(PROJTOP).asc $(PROJTOP).rpt $(PROJTOP).bin rtl/pll.v
 
 .SECONDARY:
 .PHONY: all synth prog clean gui

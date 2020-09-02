@@ -76,6 +76,7 @@ module top(
       .D_IN_0(i2c_sda_in)
    );
 
+    wire [11:0] usb_dbg;
     generate
         if (USE_Z80) begin
             iceZ0mb1e z80_core (
@@ -100,7 +101,7 @@ module top(
                 .USBP         (USBP),
                 .USBN         (USBN),
                 .USBPU        (USBPU),
-                .debug        ()
+                .usb_dbg      (usb_dbg)
             );
         end
         else begin
@@ -114,6 +115,7 @@ module top(
            assign P1_out      = 8'b0;
            assign P2_out      = 8'b0;
            assign USBPU       = 1'b0;
+           assign usb_dbg     = 4'h0;
         end
     endgenerate
 

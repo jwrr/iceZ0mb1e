@@ -89,7 +89,7 @@ void blink(unsigned int hi, unsigned int low)
 unsigned int wpm = 5;
 unsigned int dit_time_ms = 240; // 5 wpm
 
-// unsigned int dit_time_ms = 6*1000/(5*wpm);  
+// unsigned int dit_time_ms = 6*1000/(5*wpm);
 
 void dot() { blink(240, 240); }
 void dash() { blink(3*240, 240); }
@@ -124,13 +124,13 @@ void morse(char* str)
   _ = 2*di+space = 4
   s = 2*space    = 2 (this is really 3 spaces. the previous symbol includes a trailing space)
   w = 6*space    = 6 (this is really 7 spaces. the previous symbol includes a trailing space)
-  paris = ".__.s._s._.s..s...w" = 2+4+4+2+2+ 2+4+2+ 2+4+2+2+ 2+2+2+ 2+2+2+6 = 14+8+10+6+12 = 50 
-  
+  paris = ".__.s._s._.s..s...w" = 2+4+4+2+2+ 2+4+2+ 2+4+2+2+ 2+2+2+ 2+2+2+6 = 14+8+10+6+12 = 50
+
   1wpm = 1*paris/minute = 50 di / 60sec; Tdi = 1.2sec per di
   5wpm = (1.2sec/di) / 5 = 0.240sec/di
   13wpm = 1.2 / 13 = 0.092 sec/di
   20wpm = 1.2 / 20 = 0.06 sec/di
-  
+
 */
 
     const char* letters[] = {
@@ -206,6 +206,8 @@ void morse(char* str)
         } else {
             continue;
         }
+        usb_dat_out = usb_dat_in ; // str[i];
+        
         didah( letters[offset] );
     }
 } // morse
@@ -262,15 +264,36 @@ void main ()
 
 asdfasdf */
 
+    // ========================================================================
+
+//     uint8_t aaa;
+//     int pwm_cnt = 0;
+//     port_a = (pwm_cnt % 64) ? 0x00 : 0x00;
+//     while (1) {
+// //         if (usb_status==0x03)  {
+// //             port_a = 0xff;
+//             timer_delay_ms(1000); // wait 10 seconds between messages
+//             aaa = usb_dat_in;
+//             usb_dat_out = 'a'; // usb_dat_in;
+// //         }
+//         pwm_cnt++;
+//     }
 
     // ========================================================================
 
     port_cfg = 0x0; // make both io ports output
     port_a = 0x55;
+    const char msg[] = "paris \n";
 
     timer_start();
     while (1) {
-        for (int i=0; i<5; i++) morse("paris "); // send message 5 times
+        for (int i=0; i<5; i++) { // send msg 5 times
+//            for (int ii=0; msg[ii]!='\0'; ii++ ) {
+//               while (  (usb_status & 0x02) != 0 ) ;
+//               usb_dat_out = msg[ii];
+//           }
+           morse("paris ");
+        }
         timer_delay_ms(10000); // wait 10 seconds between messages
     }
     timer_stop();

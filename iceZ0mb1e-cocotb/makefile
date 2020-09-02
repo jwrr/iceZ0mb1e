@@ -5,6 +5,7 @@ MODULE ?= test_$(TOPLEVEL)
 SRC_PATH = ..
 SRC  = $(SRC_PATH)/import/*/rtl/*/*.v
 SRC += $(SRC_PATH)/rtl/*.v
+# SRC += ../tinyfpga_bx_usbserial/usb/*.v
 VERILOG_SOURCES = $(SRC)
 
 # FIRMWARE_DIR ?= ./$(TOPLEVEL)/firmware
@@ -17,7 +18,7 @@ COMPILE_ARGS += -D__def_fw_img=\"$(FIRMWARE_FILE)\"
 # $dumpfile. Also define the vcd filename if it has not been set yet.
 WAVES ?= fst
 ifneq ( $(WAVES),)
-  SRC += waves.v
+  SRC += ./waves.v
   ifeq ($(WAVES),fst)
     EXTENDED_ARGS += -fst
     WAVES_OUT ?= $(TOPLEVEL).fst

@@ -29,31 +29,32 @@ module iceZ0mb1e  #(
 	parameter ROM_WIDTH = 13,
 	parameter RAM_LOC = 16'h8000
 ) (
-	input clk,
-	input rst,
+	input  clk,
+	input  rst,
 	output uart_txd,
-	input uart_rxd,
+	input  uart_rxd,
 	output i2c_scl,
-	input i2c_sda_in,
+	input  i2c_sda_in,
 	output i2c_sda_out,
 	output i2c_sda_oen,
 	output spi_sclk,
 	output spi_mosi,
 	input  spi_miso,
  	output spi_cs,
- 	output[7:0] P1_out,
- 	input[7:0] P1_in,
+ 	output [7:0] P1_out,
+ 	input  [7:0] P1_in,
 	output P1_oen,
-	output[7:0] P2_out,
-	input[7:0] P2_in,
+	output [7:0] P2_out,
+	input  [7:0] P2_in,
 	output P2_oen,
 	inout  USBP,
 	inout  USBN,
 	output USBPU,
-	output debug
+	output [11:0] usb_dbg
 );
 	localparam ROM_SIZE = (1 << ROM_WIDTH);
 	localparam RAM_SIZE = (1 << RAM_WIDTH);
+        localparam GEN_PLL = 1;
 
 	//Z80 Bus:
 	wire        reset_n;
@@ -76,13 +77,14 @@ module iceZ0mb1e  #(
         wire [7:0] data_miso_rom;
         wire [7:0] data_miso_ram;
         wire [7:0] data_miso_port;
-        wire [7:0] data_miso_timer;
         wire [7:0] data_miso_uart;
         wire [7:0] data_miso_i2c;
         wire [7:0] data_miso_spi;
-        assign data_miso = data_miso_rom  | data_miso_ram | data_miso_port |
-                           data_miso_uart | data_miso_i2c | data_miso_spi |
-                           data_miso_timer;
+        wire [7:0] data_miso_timer;
+        wire [7:0] data_miso_usb;
+        assign data_miso = data_miso_rom   | data_miso_ram  | data_miso_port |
+                           data_miso_uart  | data_miso_i2c  | data_miso_spi  |
+                           data_miso_timer | data_miso_usb;
 
 
 	//Reset Controller:
@@ -95,7 +97,7 @@ module iceZ0mb1e  #(
 		end
 	end
 
-	wire uart_cs_n, port_cs_n, i2c_cs_n, spi_cs_n, timer_cs_n;
+	wire uart_cs_n, port_cs_n, i2c_cs_n, spi_cs_n, timer_cs_n, usb_cs_n;
 	wire rom_cs_n, ram_cs_n;
 
 	//I/O Address Decoder:
@@ -103,7 +105,8 @@ module iceZ0mb1e  #(
 	assign port_cs_n  = ~(!iorq_n & (addr[7:3] == 5'b01000)); // PORT base 0x40
 	assign i2c_cs_n   = ~(!iorq_n & (addr[7:3] == 5'b01010)); // i2c base 0x50
 	assign spi_cs_n   = ~(!iorq_n & (addr[7:3] == 5'b01100)); // spi base 0x60 01100 000 -> 0110 0000
-	assign timer_cs_n   = ~(!iorq_n & (addr[7:3] == 5'b01110)); // spi base 0x70 01110 000 -> 0111 0000
+	assign timer_cs_n = ~(!iorq_n & (addr[7:3] == 5'b01110)); // spi base 0x70 01110 000 -> 0111 0000
+	assign usb_cs_n   = ~(!iorq_n & (addr[7:3] == 5'b10000)); // spi base 0x80 10000 000 -> 1000 0000
 	//Memory Address Decoder:
 	assign rom_cs_n = ~(!mreq_n & (addr  < ROM_SIZE));
 	assign ram_cs_n = ~(!mreq_n & (addr >= RAM_LOC) & (addr < (RAM_LOC+RAM_SIZE)));
@@ -261,46 +264,55 @@ endgenerate
 		.addr		(addr[3:0])
 	);
 
-
-
         // ===============================================================
         // ===============================================================
-        // ===============================================================
-        // ===============================================================
-
 
     wire clk_48mhz;
     wire clk_locked;
+    
 
-    pll pll48( .clock_in(clk), .clock_out(clk_48mhz), .locked( clk_locked ) );
-
+    generate
+       if (GEN_PLL) begin
+          pll pll48( .clock_in(clk), .clock_out(clk_48mhz), .locked(clk_locked) );
+       end
+       else begin
+          assign clk_48mhz = clk;
+          assign clk_locked = 1'b1;
+       end 
+    endgenerate
+    
     // Generate reset signal
-    reg [5:0] reset_cnt = 0;
-    wire      reset = ~reset_cnt[5];
-    wire      rst_48mhz = rst | reset;
-    assign    reset_n = ~rst_48mhz;
-
-    always @(posedge clk_48mhz) begin
-       if (clk_locked) begin
-          reset_cnt <= reset_cnt + reset;
+    reg [5:0] reset_cnt;
+    always @(posedge clk) begin
+       if (~clk_locked)
+          reset_cnt <= 6'h1;
+       else begin
+          if (reset_cnt != 0) reset_cnt <= reset_cnt + 1;
        end
     end
+    wire      reset1  = reset_cnt != 0;
+    wire      reset   = rst | reset1;
+    assign    reset_n = ~reset;
 
-    // usb uart - this instanciates the entire USB device.
     simpleusb_wrapper usb0 (
         .clk        (clk),
-        .rst_n      (rst_n),
+        .rst_n      (reset_n),
         .clk_48mhz  (clk_48mhz),
-        .rst_48mhz  (rst_48mhz),
+        .rst_48mhz  (reset),
 
-        // pins
         .pin_usb_p  (USBP),
         .pin_usb_n  (USBN),
         .pin_usb_pu (USBPU),
 
-        //.debug( debug )
+        .cs_n       (usb_cs_n),
+        .rd_n       (rd_n),
+        .wr_n       (wr_n),
+        .addr       (addr[1:0]),
+        .data_in    (data_mosi),
+        .data_out   (data_miso_usb),
+
+        .debug      (usb_dbg)
     );
 
-
-
 endmodule
+

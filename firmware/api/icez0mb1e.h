@@ -65,7 +65,6 @@ __sfr __at 0x63 spi_cmd;
 __sfr __at 0x64 spi_dat_in;
 __sfr __at 0x65 spi_dat_out;
 
-
 __sfr __at 0x70 timer_del0;
 __sfr __at 0x71 timer_del1;
 __sfr __at 0x72 timer_del2;
@@ -77,7 +76,9 @@ __sfr __at 0x77 timer_now1;
 __sfr __at 0x78 timer_now2;
 __sfr __at 0x79 timer_now3;
 
-
+__sfr __at 0x80 usb_status;
+__sfr __at 0x81 usb_dat_in;
+__sfr __at 0x82 usb_dat_out;
 
 #endif
 
