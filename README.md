@@ -1,5 +1,15 @@
 ### iceZ0mb1e
 
+### Changes from upstream
+
+* Add support for nextpnr
+* Add timer
+* Add pll
+* Reduce data from 8KBytes to 4KBytes (Reducing EBRAM from 32 to 24)
+* Add hooks for usb
+
+=====================
+
 iceZ0mb1e aims to build a TV80 based demonstration system-on-chip using complete open source FPGA toolchain flow (http://www.clifford.at/yosys/) including firmware compilation with SDCC.
 
 This is a completely free microcontroller based on customizable open source components.

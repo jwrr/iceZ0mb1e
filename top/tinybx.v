@@ -79,7 +79,10 @@ module top(
     wire [11:0] usb_dbg;
     generate
         if (USE_Z80) begin
-            iceZ0mb1e z80_core (
+            iceZ0mb1e #(
+               .GEN_USB       (1),
+               .GEN_PLL       (1)
+            ) z80_core (
                 .clk          (clk),
                 .rst          (1'b0),
                 .uart_txd     (uart_txd),

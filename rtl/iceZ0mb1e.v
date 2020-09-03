@@ -27,7 +27,9 @@ module iceZ0mb1e  #(
 	parameter RAM_TYPE = 0,
 	parameter RAM_WIDTH = 12, // reduce from 8K to 4KByte (saves 8 EBRAM)
 	parameter ROM_WIDTH = 13,
-	parameter RAM_LOC = 16'h8000
+	parameter RAM_LOC = 16'h8000,
+	parameter GEN_USB = 0,
+        parameter GEN_PLL = 0
 ) (
 	input  clk,
 	input  rst,
@@ -54,7 +56,6 @@ module iceZ0mb1e  #(
 );
 	localparam ROM_SIZE = (1 << ROM_WIDTH);
 	localparam RAM_SIZE = (1 << RAM_WIDTH);
-        localparam GEN_PLL = 1;
 
 	//Z80 Bus:
 	wire        reset_n;
@@ -294,25 +295,34 @@ endgenerate
     wire      reset   = rst | reset1;
     assign    reset_n = ~reset;
 
-    simpleusb_wrapper usb0 (
-        .clk        (clk),
-        .rst_n      (reset_n),
-        .clk_48mhz  (clk_48mhz),
-        .rst_48mhz  (reset),
-
-        .pin_usb_p  (USBP),
-        .pin_usb_n  (USBN),
-        .pin_usb_pu (USBPU),
-
-        .cs_n       (usb_cs_n),
-        .rd_n       (rd_n),
-        .wr_n       (wr_n),
-        .addr       (addr[1:0]),
-        .data_in    (data_mosi),
-        .data_out   (data_miso_usb),
-
-        .debug      (usb_dbg)
-    );
+    generate
+       if (GEN_USB) begin
+          simpleusb_wrapper usb0 (
+             .clk        (clk),
+             .rst_n      (reset_n),
+             .clk_48mhz  (clk_48mhz),
+             .rst_48mhz  (reset),
+      
+             .pin_usb_p  (USBP),
+             .pin_usb_n  (USBN),
+             .pin_usb_pu (USBPU),
+      
+             .cs_n       (usb_cs_n),
+             .rd_n       (rd_n),
+             .wr_n       (wr_n),
+             .addr       (addr[1:0]),
+             .data_in    (data_mosi),
+             .data_out   (data_miso_usb),
+      
+             .debug      (usb_dbg)
+          );
+       end
+       else begin
+          assign USBPU = 1;
+          assign data_miso_usb = 8'b0;
+          assign usb_dbg = 12'b0;
+       end
+    endgenerate
 
 endmodule
 

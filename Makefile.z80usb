@@ -2,7 +2,7 @@
 ## Make and program TinyFPGA BX
 ##
 
-PROJTOP = z80usb
+PROJTOP = iceZ0mb1e
 
 USB_DIR = tinyfpga_bx_usbserial
 SOURCES = \
