@@ -57,6 +57,7 @@ void oled_reset()
     delay(50000);
 }
 
+
 void View_Memory(uint8_t *mem, uint16_t len)
 {
     uint16_t x;
@@ -77,6 +78,27 @@ void View_Memory(uint8_t *mem, uint16_t len)
 }
 
 
+// uint16_t dit_time_ms = 6*1000/(5*wpm);  
+static uint16_t  dit_time_ms = 240; // 5 wpm
+static uint8_t*  led_addr = NULL;
+static uint8_t*  led_on   = 0x01;
+static uint8_t*  led_off  = 0x00;
+
+
+// void morse_init(uint8_t wpm, uint8_t* addr, uint8_t on, uint8_t off)
+// {
+//     dit_time_ms = 1200 / wpm;
+//     led_addr = addr;
+//     led_on = on;
+//     led_off = off;
+// }
+
+void morse_wpm(uint8_t wpm)
+{
+    dit_time_ms = 1200 / wpm;
+}
+
+
 void blink(unsigned int hi, unsigned int low)
 {
     port_a = 0xff; // bit 0 is LED
@@ -86,15 +108,11 @@ void blink(unsigned int hi, unsigned int low)
     timer_delay_ms(low);
 }
 
-unsigned int wpm = 5;
-unsigned int dit_time_ms = 240; // 5 wpm
 
-// unsigned int dit_time_ms = 6*1000/(5*wpm);  
-
-void dot() { blink(240, 240); }
-void dash() { blink(3*240, 240); }
-void endsym() { blink(0, 2*240); } // this is actually 3*dot
-void endword() { blink(0, 6*240); } // this is actually 7*dot
+void dit() { blink(dit_time_ms, dit_time_ms); }
+void dah() { blink(3*dit_time_ms, dit_time_ms); }
+void endsym() { blink(0, 2*dit_time_ms); } // this is actually 3*dit
+void endword() { blink(0, 6*dit_time_ms); } // this is actually 7*dit
 
 void didah(const char* str)
 {
@@ -102,8 +120,8 @@ void didah(const char* str)
     for (int i=0; str[i]!='\0'; i++) {
         c = str[i];
         switch (c) {
-            case '.': dot(); break;
-            case '_': dash(); break;
+            case '.': dit(); break;
+            case '_': dah(); break;
             case ' ': endword(); break;
         }
     }
@@ -111,7 +129,7 @@ void didah(const char* str)
 }
 
 
-void morse(char* str)
+void morse_msg(char* str)
 {
 /*
   di    = 1 unit
@@ -208,7 +226,13 @@ void morse(char* str)
         }
         didah( letters[offset] );
     }
-} // morse
+} // morse_msg
+
+
+// ==========================================================================
+// ==========================================================================
+// ==========================================================================
+
 
 void main ()
 {
@@ -269,8 +293,9 @@ asdfasdf */
     port_a = 0x55;
 
     timer_start();
+    morse_wpm(5);
     while (1) {
-        for (int i=0; i<5; i++) morse("paris "); // send message 5 times
+        for (int i=0; i<5; i++) morse_msg("paris "); // send message 5 times
         timer_delay_ms(10000); // wait 10 seconds between messages
     }
     timer_stop();

@@ -122,7 +122,8 @@ module top(
         end
     endgenerate
 
-    assign LED = usb_dbg[0]; // P1_out[0]; // blink_pattern[blink_counter[25:21]];
+//    assign LED = usb_dbg[0]; // P1_out[0]; // blink_pattern[blink_counter[25:21]];
+    assign LED = P1_out[0];
 endmodule
 
 
