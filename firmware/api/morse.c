@@ -1,5 +1,5 @@
 
-
+#include "icez0mb1e.h"
 #include "led.h"
 #include "simpletimer.h"
 
@@ -31,7 +31,14 @@ static void didah(const char* str)
 }
 
 
-void morse_msg(char* str)
+static uint8_t echo_to_usb;
+void morse_echo_to_usb(uint8_t echo)
+{
+    echo_to_usb = echo;
+}
+
+
+void morse_char(char c)
 {
 /*
   di    = 1 unit
@@ -112,22 +119,28 @@ void morse_msg(char* str)
 //         ""  // 0 (
     };
 
-    for (int i=0; str[i]!='\0'; i++) {
-        char c = str[i];
-        unsigned int offset = 0;
-        if ('A' <= c && c <= 'Z') {
-            offset = c - 'A';
-        } else if ('a' <= c && c <= 'z') {
-            offset = c - 'a';
-        } else if ('0' <= c && c <= '9') { // number
-            offset = c - '0' + 26;
-        } else if (c==' ') {
-            offset = 36;
-        } else {
-            continue;
-        }
-        didah( letters[offset] );
+    unsigned int offset = 0;
+    if ('A' <= c && c <= 'Z') {
+        offset = c - 'A';
+    } else if ('a' <= c && c <= 'z') {
+        offset = c - 'a';
+    } else if ('0' <= c && c <= '9') { // number
+        offset = c - '0' + 26;
+    } else if (c==' ') {
+        offset = 36;
+    } else {
+        return;
     }
-} // morse_msg
+    if (echo_to_usb) usb_dat_out = c;
+    didah( letters[offset] );
+} // morse_char
+
+
+void morse_msg(char* str) {
+    for (int i=0; str[i]!='\0'; i++) {
+        morse_char(str[i]);
+    }
+}
+
 
 

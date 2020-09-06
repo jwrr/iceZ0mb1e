@@ -8,5 +8,8 @@
 // morse_msg("Hello All");
 
 void morse_init(uint8_t wpm);
+void morse_echo_to_usb(uint8_t echo);
+
+void morse_char(char c);
 void morse_msg(char* str);
 

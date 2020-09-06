@@ -132,9 +132,21 @@ asdfasdf */
 
     timer_start();
     morse_init(5);
+    morse_echo_to_usb(1);
+
+    char msg[] = "paris ";
+
     while (1) {
-        for (int i=0; i<5; i++) morse_msg("paris "); // send message 5 times
-        timer_delay_ms(10000); // wait 10 seconds between messages
+//      morse_msg(msg); // send message 5 times
+        for (int ii=0; msg[ii]!='\0'; ii++)  {
+            if (usb_status & 0x01) break;
+            morse_char(msg[ii]);
+        }
+        if (usb_status & 0x01) {
+            morse_char(usb_dat_in);
+        } else {
+            timer_delay_ms(3000); // wait 10 seconds between messages
+        }
     }
     timer_stop();
 

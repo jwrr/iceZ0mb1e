@@ -54,3 +54,16 @@ void timer_delay_ms(uint16_t n)
 }
 
 
+uint8_t usb_wait(uint16_t to)
+{
+    timer_start();
+    uint16_t cnt = 0;
+    while (1) {
+        if (usb_status & 0x01) return 1;
+        timer_delay_ms(1);
+        cnt++;
+        if (cnt==to) return 0;
+    }
+}
+
+
