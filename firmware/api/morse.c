@@ -2,10 +2,11 @@
 #include "icez0mb1e.h"
 #include "led.h"
 #include "simpletimer.h"
+#include "usb.h"
 
 static uint16_t dit_time_ms;
 
-void morse_init(uint8_t wpm)
+void morse_set_wpm(uint8_t wpm)
 {
     dit_time_ms = 1200 / wpm; // 6*1000/(5*wpm)
 }
@@ -32,13 +33,21 @@ static void didah(const char* str)
 
 
 static uint8_t echo_to_usb;
-void morse_echo_to_usb(uint8_t echo)
+void morse_set_echo_to_usb(uint8_t echo)
 {
     echo_to_usb = echo;
 }
 
+static uint8_t stop_on_usb;
+void morse_set_stop_on_usb(uint8_t stop_on_usb)
+{
+    stop_on_usb = stop_on_usb;
+}
 
-void morse_char(char c)
+
+
+
+void morse_putc(char c)
 {
 /*
   di    = 1 unit
@@ -51,13 +60,13 @@ void morse_char(char c)
   _ = 2*di+space = 4
   s = 2*space    = 2 (this is really 3 spaces. the previous symbol includes a trailing space)
   w = 6*space    = 6 (this is really 7 spaces. the previous symbol includes a trailing space)
-  paris = ".__.s._s._.s..s...w" = 2+4+4+2+2+ 2+4+2+ 2+4+2+2+ 2+2+2+ 2+2+2+6 = 14+8+10+6+12 = 50 
-  
+  paris = ".__.s._s._.s..s...w" = 2+4+4+2+2+ 2+4+2+ 2+4+2+2+ 2+2+2+ 2+2+2+6 = 14+8+10+6+12 = 50
+
   1wpm = 1*paris/minute = 50 di / 60sec; Tdi = 1.2sec per di
   5wpm = (1.2sec/di) / 5 = 0.240sec/di
   13wpm = 1.2 / 13 = 0.092 sec/di
   20wpm = 1.2 / 20 = 0.06 sec/di
-  
+
 */
 
     const char* letters[] = {
@@ -133,14 +142,16 @@ void morse_char(char c)
     }
     if (echo_to_usb) usb_dat_out = c;
     didah( letters[offset] );
-} // morse_char
+} // morse_putc
 
 
-void morse_msg(char* str) {
-    for (int i=0; str[i]!='\0'; i++) {
-        morse_char(str[i]);
+uint16_t morse_puts(char* str) {
+    uint16_t ii = 0;
+    for (ii=0; str[ii]!='\0'; ii++)  {
+        if (!usb_rx_empty()) break;
+        morse_putc(str[ii]);
     }
+    return ii;  // return num char sent
 }
-
 
 

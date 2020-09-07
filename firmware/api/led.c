@@ -31,6 +31,7 @@ void led_off()
 
 void led_blink(unsigned int hi_time, unsigned int low_time)
 {
+    timer_start(); // if it's already started then this does nothing
     led_on();
     timer_delay_ms(hi_time);
 

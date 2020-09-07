@@ -31,5 +31,5 @@
 void timer_start(void);
 void timer_stop(void);
 void timer_delay_ms(uint16_t n);
-uint8_t usb_wait(uint16_t to);
+char usb_read_wait(uint16_t timeout_ms);
 #endif
